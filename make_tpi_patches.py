@@ -130,7 +130,7 @@ for _, id in enumerate(tqdm(train_ids)):
                 #print('x', 'y', x, y, w, h)
                 xs, ys = tile_label(y, x, w, h, psize, step, imwh)
                 #print('xy ys', xs, ys)
-                patches1, patches2 = cut_patches(im1, im2, label, xs, ys, psize, 0.4)
+                patches1, patches2 = cut_patches(im1, im2, label, xs, ys, psize, 0.5)
                 #plotit(label, x, y, w, h)
 
         #    print(x, y, h ,w) #h| w-
