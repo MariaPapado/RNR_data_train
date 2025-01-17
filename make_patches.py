@@ -39,6 +39,7 @@ def cut_patches(im1, im2, label, xs, ys, psize, perc):
                 patches1.append(im1[x:x+psize, y:y+psize, :])
                 patches2.append(im2[x:x+psize, y:y+psize, :])
                 masks.append(label[x:x+psize, y:y+psize])
+    #print('len12', len(patches1), len(patches2))
     return patches1, patches2, masks
 
 def centered_patch(contour, psize):
@@ -61,7 +62,7 @@ def save_patches(patches1, patches2, masks, lu, save_folder, id):
     class_agri = [2,3] #0
     class_nonrel = [6, 7, 8, 14] #2 ##unsure
     class_veg = [9]
-    class_rel = [10, 11, 12, 13] #1
+    class_rel = [10, 11, 12, 13, 15] #1
      
 
     #--4 --12
@@ -87,19 +88,23 @@ def save_patches(patches1, patches2, masks, lu, save_folder, id):
             patches1 = mod_patches1
             patches2 = mod_patches2
             masks = mod_masks        
+    print('bbbbbb')
 
     for i in range(0, len(patches1)):
         patch = patches1[i].astype(np.uint8)
         patch = Image.fromarray(patch)
-        patch.save('{}/im1/{}_{}_class{}.png'.format(save_folder, id[:-6], i, final_class))
+        patch.save('{}/im1/{}_{}_v2_class{}.png'.format(save_folder, id[:-4], i, final_class))
+        print('iiiiiiiiiiiiiiiiiiiiiiiiii', id[:-4])
+
     for i in range(0, len(patches2)):
         patch = patches2[i].astype(np.uint8)
         patch = Image.fromarray(patch)
-        patch.save('{}/im2/{}_{}_class{}.png'.format(save_folder, id[:-6], i, final_class))        
+        patch.save('{}/im2/{}_{}_v2_class{}.png'.format(save_folder, id[:-4], i, final_class))        
+
     for i in range(0, len(masks)):
         patch = (masks[i]*255).astype(np.uint8)
         patch = Image.fromarray(patch)
-        patch.save('{}/mask/{}_{}_class{}.png'.format(save_folder, id[:-6], i, final_class)) 
+        patch.save('{}/mask/{}_{}_v2_class{}.png'.format(save_folder, id[:-4], i, final_class)) 
 
 
 def plotit(label, x, y, w, h):
@@ -110,29 +115,37 @@ def plotit(label, x, y, w, h):
     plt.axis('off')
     plt.show()
 
-split='val'
-train_ids = os.listdir('/home/mariapap/DATASETS/dataset_FP_v1/{}/im1/'.format(split))
+split='train'
+train_ids = os.listdir('/home/mariapap/DATASETS/dataset_FP_v2/{}/im1/'.format(split))
 
 class_names = ["background", "none", "agricultural field", "agricultural other", "coregistration/stitching", "incident angle", 
                "shadow", "cloud", "not relevant", "vegetation clearing", "groundworks", "construction works", "vehicle", "road works", "snow"]
 psize=128
-step=128
+step=48
 area_patch = psize*psize
 imwh=512
 class_ignore = [0, 1, 4, 5]
 
+train_ids = ['233491_0.png', '233494_6.png', '233490_0.png']
+train_ids = ['233493_2.png', '233493_1.png', '233495_1.png', '233595_3.png', '233595_6.png', '233595_16.png']
+sum1=0
+
 for _, id in enumerate(tqdm(train_ids)):
+    print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
   #if id=='Gas-Connect-2024_2267ML_1.png':
     print(id)
-    im1 = Image.open('/home/mariapap/DATASETS/dataset_FP_v1/{}/im1/{}'.format(split,id))
-    im2 = Image.open('/home/mariapap/DATASETS/dataset_FP_v1/{}/im2/{}'.format(split,id))
-    label = Image.open('/home/mariapap/DATASETS/dataset_FP_v1/{}/label/{}'.format(split,id))
+    im1 = Image.open('/home/mariapap/DATASETS/dataset_FP_v2/{}/im1/{}'.format(split,id))
+    im2 = Image.open('/home/mariapap/DATASETS/dataset_FP_v2/{}/im2/{}'.format(split,id))
+    label = Image.open('/home/mariapap/DATASETS/dataset_FP_v2/{}/label/{}'.format(split,id))
     im1, im2, label = np.array(im1), np.array(im2), np.array(label)
     l_uni = np.unique(label)
     if len(l_uni)==2:
         lu = l_uni[1]
     else:
         lu = l_uni[0]
+    print('lu', lu)
+    if lu==1:
+        sum1 = sum1+1
     if lu not in class_ignore:
         contours, _ = cv2.findContours(label, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -141,50 +154,35 @@ for _, id in enumerate(tqdm(train_ids)):
         area = cv2.contourArea(contour)
         idxn0 = np.where(label!=0)
         label[idxn0]=1
-        #print('area', area)
+        print('area', area, area_patch)
+        x, y, w, h = cv2.boundingRect(contour)
+        print('xxxx', x,y,w,h)
+
         if area>0:
-            if area<=area_patch:
+            if area<=4000 or w<=128 or h<=128: #area_patch:
+                x, y, w, h = cv2.boundingRect(contour)
+                #if w<=128 or h<=128:
                 x, y, w, h = centered_patch(contour, psize)
                 #print('x', 'y', x, y)
                 patches1, patches2, masks = cut_patches(im1, im2, label, [x], [y], psize, 0)
                 #plotit(label, x, y, w, h)
 
+
+
             else:
                 x, y, w, h = cv2.boundingRect(contour)
-                #print('x', 'y', x, y, w, h)
+                print('x', 'y', x, y, w, h)
                 xs, ys = tile_label(y, x, w, h, psize, step, imwh)
                 #print('xy ys', xs, ys)
-                patches1, patches2, masks = cut_patches(im1, im2, label, xs, ys, psize, 0.5)
+                patches1, patches2, masks = cut_patches(im1, im2, label, xs, ys, psize, 0.25)
                 #plotit(label, x, y, w, h)
 
         #    print(x, y, h ,w) #h| w-
 
             if patches1 and patches2:
-                #print('PPPPPPPPPPPPPPPPPPPPPPPPPPP')
+                print('PPPPPPPPPPPPPPPPPPPPPPPPPPP')
                 save_patches(patches1, patches2, masks, lu, './PATCHES/{}'.format(split), id)
 
-'''
-original labels
-class_labels = {
-    "background": 0,
-    "none": 1,
-    "agricultural field": 2,
-    "agricultural other": 3,
-    "coregistration/stitching": 4,
-    "incident angle": 5,
-    "shadow": 6,
-    "cloud": 7,
-    "not relevant": 8,
-    "vegetation clearing": 9,
-    "groundworks": 10,
-    "construction works": 11,
-    "vehicle": 12,
-    "road works": 13,
-    "snow": 14,
-}
-
-
-'''
-
-
+    
+print('sum', sum1)
 
