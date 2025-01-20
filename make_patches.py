@@ -88,13 +88,13 @@ def save_patches(patches1, patches2, masks, lu, save_folder, id):
             patches1 = mod_patches1
             patches2 = mod_patches2
             masks = mod_masks        
-    print('bbbbbb')
+    #print('bbbbbb')
 
     for i in range(0, len(patches1)):
         patch = patches1[i].astype(np.uint8)
         patch = Image.fromarray(patch)
         patch.save('{}/im1/{}_{}_v2_class{}.png'.format(save_folder, id[:-4], i, final_class))
-        print('iiiiiiiiiiiiiiiiiiiiiiiiii', id[:-4])
+        #print('iiiiiiiiiiiiiiiiiiiiiiiiii', id[:-4])
 
     for i in range(0, len(patches2)):
         patch = patches2[i].astype(np.uint8)
@@ -127,11 +127,13 @@ imwh=512
 class_ignore = [0, 1, 4, 5]
 
 train_ids = ['233491_0.png', '233494_6.png', '233490_0.png']
-train_ids = ['233493_2.png', '233493_1.png', '233495_1.png', '233595_3.png', '233595_6.png', '233595_16.png']
+train_ids = ['233493_2.png', '233493_1.png', '233495_1.png', '233595_3.png', '233595_6.png', '233595_16.png', '233494_7.png']
+#train_ids = ['233495_2.png']
+train_ids = ['233594_5.png']
 sum1=0
 
 for _, id in enumerate(tqdm(train_ids)):
-    print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+    #print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
   #if id=='Gas-Connect-2024_2267ML_1.png':
     print(id)
     im1 = Image.open('/home/mariapap/DATASETS/dataset_FP_v2/{}/im1/{}'.format(split,id))
@@ -154,35 +156,46 @@ for _, id in enumerate(tqdm(train_ids)):
         area = cv2.contourArea(contour)
         idxn0 = np.where(label!=0)
         label[idxn0]=1
-        print('area', area, area_patch)
+        #print('area', area, area_patch)
         x, y, w, h = cv2.boundingRect(contour)
-        print('xxxx', x,y,w,h)
+        #print('xxxx', x,y,w,h)
+
+        if w<=psize:
+            diff = int((psize-w)/2.)
+            x = x-diff
+            w = psize+1
+        if h<=psize:
+            diff = int((psize-h)/2.)
+            y = y-diff
+            h = psize  +1
+
 
         if area>0:
-            if area<=4000 or w<=128 or h<=128: #area_patch:
-                x, y, w, h = cv2.boundingRect(contour)
+            if area<=2000: #area_patch:
+
+                #x, y, w, h = cv2.boundingRect(contour)
                 #if w<=128 or h<=128:
                 x, y, w, h = centered_patch(contour, psize)
                 #print('x', 'y', x, y)
-                patches1, patches2, masks = cut_patches(im1, im2, label, [x], [y], psize, 0)
-                #plotit(label, x, y, w, h)
-
-
+                patches1, patches2, masks = cut_patches(im1, im2, label, [x], [y], psize, 0.001)
+                #plotit(label, x, y, w, h)          
 
             else:
-                x, y, w, h = cv2.boundingRect(contour)
-                print('x', 'y', x, y, w, h)
+                #print('eeeeeeeeeee')
+
+                #x, y, w, h = cv2.boundingRect(contour)
+                #print('x', 'y', x, y, w, h)
                 xs, ys = tile_label(y, x, w, h, psize, step, imwh)
                 #print('xy ys', xs, ys)
-                patches1, patches2, masks = cut_patches(im1, im2, label, xs, ys, psize, 0.25)
+                patches1, patches2, masks = cut_patches(im1, im2, label, xs, ys, psize, 0.05)
                 #plotit(label, x, y, w, h)
 
         #    print(x, y, h ,w) #h| w-
 
             if patches1 and patches2:
-                print('PPPPPPPPPPPPPPPPPPPPPPPPPPP')
+                #print('PPPPPPPPPPPPPPPPPPPPPPPPPPP')
                 save_patches(patches1, patches2, masks, lu, './PATCHES/{}'.format(split), id)
 
     
-print('sum', sum1)
+#print('sum', sum1)
 
